@@ -1,0 +1,8 @@
+    name: PathBuilder
+    main: com.robbpell.Main
+    version: 1.0.1
+    description:
+    commands:
+      test:
+        description:
+        usage: /<command>
