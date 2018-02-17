@@ -26,21 +26,28 @@ public class PathBuilder {
     
 public static Block Find(Player player){
     System.out.println("start");
-    Block closest = closestBlock(player.getLocation(),new HashSet<Material>(Arrays.asList(Material.NETHER_BRICK)),500);
+    Location pLoc = player.getLocation();
+    Block closest = closestBlock(pLoc,new HashSet<Material>(Arrays.asList(Material.NETHER_BRICK)),500);
     if(closest == null)
     {
         System.out.println("none found");
         return null;
     }
+    System.out.println("block found");
+    closest = getLedge(closest);
+    
+    boolean XDecrease = pLoc.getX() > closest.getX();
+
     Location loc = closest.getLocation();
     System.out.println(loc.getX() + "," + loc.getY() + "," + loc.getZ());
     return closest;
 }
     /**
- * Finds the closest block in a vertical column.
+ * Finds block by type in radius. select top most if stacked.
  * @param origin The location around which to search.
  *               This location will NOT be included in the search, but all other locations in the column will.
  * @param types  A Set (preferably a HashSet) that contains the type IDs of blocks to search for
+ * @parm radius radius to search
  * @return The closest block, or null if one was not found in the column.
  *         In the case of a tie, the higher block wins.
  */
@@ -59,7 +66,17 @@ public static Block closestBlock(Location origin, Set<Material> types, int radiu
                 {
                     Block b = world.getBlockAt((int)pX+x, (int)pY+y, (int)pZ+z);
                     if(b.getType() == Material.NETHER_BRICK)
-                        return b;
+                    {
+                        Location pos = b.getLocation();
+                        System.out.println("non-top found");
+                            while(world.getBlockAt(pos).getType() == Material.NETHER_BRICK){
+                                pos.setY(pos.getY()+1);
+                            }
+                            pos.setY(pos.getY()-1);
+                        System.out.println("top found");
+                        return world.getBlockAt(pos);
+                    
+                    }
                 }
             }
         }
@@ -68,8 +85,52 @@ public static Block closestBlock(Location origin, Set<Material> types, int radiu
     return null;
 }
 
-
+/*
+ * Checks for positoin with 2 blocks on each side. 
+ * @parm block starting block.
+ * @return The center ledge of the block (top most with 2 on each side)
+ */
+public static Block getLedge(Block block){
+    World world = block.getWorld();
+    Location loc = block.getLocation();
+    
+    if(isType(loc,Material.NETHER_BRICK,-2) &&
+       isType(loc,Material.NETHER_BRICK,-1) &&
+       isType(loc,Material.NETHER_BRICK,1) &&
+       isType(loc,Material.NETHER_BRICK,2)){
+        return block;
+    }
+    int posOffset = 0;
+    for (int i = 1; i <= 5; i++) {
+        if(!isType(loc,Material.NETHER_BRICK,i))
+            posOffset = i--;
+        else if (i == 5)
+            posOffset = 5;
+    }
+    int negOffset = 0;
+    for (int i = 1; i <= 5; i++) {
+        if(!isType(loc,Material.NETHER_BRICK,i*-1))
+            negOffset = i++;
+        else if (i == 5)
+            negOffset = -5;
+    }
+    
+    if((negOffset *-1) + posOffset < 5)
+        return null;
+    else if (negOffset > -2){
+        loc.setX(loc.getX() + (2 + negOffset));
+    }else if (posOffset < 2){
+        loc.setX(loc.getX() - (2 - posOffset));
+    }
+    
+    return world.getBlockAt(loc);
+}
  
+public static boolean isType(Location loc,Material type, int xOffset){
+    loc.setX(loc.getX()+ xOffset);
+    return loc.getWorld().getBlockAt(loc).getType() == type;
+}
+
    /** 
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String arg[]) {
         Player player = (Player) sender;
