@@ -9,10 +9,13 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.material.Stairs;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -35,8 +38,11 @@ public static Block Find(Player player){
     }
     System.out.println("block found");
     closest = getLedge(closest);
-    
-    boolean XDecrease = pLoc.getX() > closest.getX();
+    System.out.println("Ledge found");
+
+    System.out.println("Building Steps");
+    buildSteps(pLoc,closest.getLocation());
+    System.out.println("Steps Built");
 
     Location loc = closest.getLocation();
     System.out.println(loc.getX() + "," + loc.getY() + "," + loc.getZ());
@@ -68,12 +74,10 @@ public static Block closestBlock(Location origin, Set<Material> types, int radiu
                     if(b.getType() == Material.NETHER_BRICK)
                     {
                         Location pos = b.getLocation();
-                        System.out.println("non-top found");
                             while(world.getBlockAt(pos).getType() == Material.NETHER_BRICK){
                                 pos.setY(pos.getY()+1);
                             }
                             pos.setY(pos.getY()-1);
-                        System.out.println("top found");
                         return world.getBlockAt(pos);
                     
                     }
@@ -100,6 +104,8 @@ public static Block getLedge(Block block){
        isType(loc,Material.NETHER_BRICK,2)){
         return block;
     }
+    
+    System.out.println("finding offset");
     int posOffset = 0;
     for (int i = 1; i <= 5; i++) {
         if(!isType(loc,Material.NETHER_BRICK,i))
@@ -110,27 +116,70 @@ public static Block getLedge(Block block){
     int negOffset = 0;
     for (int i = 1; i <= 5; i++) {
         if(!isType(loc,Material.NETHER_BRICK,i*-1))
-            negOffset = i++;
+            negOffset = (i*-1)+ 1;
         else if (i == 5)
             negOffset = -5;
     }
     
-    if((negOffset *-1) + posOffset < 5)
+    System.out.println("Ajusting offset" + negOffset + " " + posOffset);
+    if(((negOffset *-1) + posOffset) < 5)
         return null;
     else if (negOffset > -2){
         loc.setX(loc.getX() + (2 + negOffset));
     }else if (posOffset < 2){
         loc.setX(loc.getX() - (2 - posOffset));
-    }
+    }else
+        System.err.println("no ledge found using current block");
     
     return world.getBlockAt(loc);
 }
  
+/*
+ * check if block is type
+ * @parm loc location to check
+ * @parm type check if is this type
+ * @parm xOffset int to add to the x value of the location before checking
+ */
 public static boolean isType(Location loc,Material type, int xOffset){
     loc.setX(loc.getX()+ xOffset);
     return loc.getWorld().getBlockAt(loc).getType() == type;
 }
 
+
+public static void setBlock(Location loc, Material type){
+    loc.getBlock().setType(type);
+    //#TODO add side blocks for path
+}
+
+public static Block buildSteps(Location startLoc,Location endLoc){
+    boolean YDecrease = startLoc.getY() > endLoc.getY();
+    boolean ZDecrease = startLoc.getZ() > endLoc.getZ();
+    int offsetY = 1;
+    if(YDecrease) offsetY = -1;
+    int offsetZ = 1;
+    BlockFace face = BlockFace.NORTH;
+    if(ZDecrease) {
+        offsetZ = -1;
+    }
+    if(ZDecrease && YDecrease)
+        face = BlockFace.SOUTH;
+    Location currentLoc = startLoc;
+    while(currentLoc.getY() != endLoc.getY()){
+        System.out.println("Adding Step" + currentLoc.getY() +" "+ endLoc.getY());
+        currentLoc.setY(currentLoc.getY()+offsetY);
+        currentLoc.setZ(currentLoc.getZ()+offsetZ);
+        setBlock(currentLoc,Material.NETHER_BRICK_STAIRS);
+       
+        BlockState state = currentLoc.getBlock().getState();
+       
+        Stairs stairs = (Stairs) state.getData();
+        stairs.setFacingDirection(face);
+       
+        state.setData(stairs);
+        state.update(false, false);
+    }
+    return currentLoc.getBlock();
+}
    /** 
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String arg[]) {
         Player player = (Player) sender;
