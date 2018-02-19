@@ -1,9 +1,6 @@
 package com.robbpell;
 
-import static com.robbpell.Direction.EAST;
 import static com.robbpell.Direction.NORTH;
-import static com.robbpell.Direction.SOUTH;
-import static com.robbpell.Direction.WEST;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,10 +30,8 @@ public class PathBuilder {
     
 public static Block Find(Player player){
     System.out.println("start");
-    Location currentLocation = player.getLocation();
-    
-    //Get end/goal block
-    Block closest = closestBlock(currentLocation,new HashSet<Material>(Arrays.asList(Material.NETHER_BRICK)),500);
+    Location pLoc = player.getLocation();
+    Block closest = closestBlock(pLoc,new HashSet<Material>(Arrays.asList(Material.NETHER_BRICK)),500);
     if(closest == null)
     {
         System.out.println("none found");
@@ -46,31 +41,27 @@ public static Block Find(Player player){
     closest = getLedge(closest);
     System.out.println("Ledge found");
 
-    double xDif = Math.abs(currentLocation.getX() - closest.getLocation().getX());
-    double zDif = Math.abs(currentLocation.getZ() - closest.getLocation().getZ());
+    double xDif = Math.abs(pLoc.getX() - closest.getLocation().getX());
+    double zDif = Math.abs(pLoc.getZ() - closest.getLocation().getZ());
     Direction dir;
     if(xDif > zDif){
-        if(currentLocation.getX() > closest.getX()){
+        if(pLoc.getX() > closest.getX()){
             dir = Direction.WEST;
         }else{
             dir = Direction.EAST;
         }
     } else{
-        if(currentLocation.getZ() > closest.getZ()){
+        if(pLoc.getZ() > closest.getZ()){
             dir = Direction.NORTH;
         }else{
             dir = Direction.SOUTH;
         }
     }
     
-    //build path
     System.out.println("Building Steps");
-    currentLocation = buildSteps(currentLocation,closest.getLocation(),dir);
+    buildSteps(pLoc,closest.getLocation(),dir);
     System.out.println("Steps Built");
-    
-    setDiagonalPath(currentLocation,closest.getLocation());
-    System.out.println("Diagonal Built");
-        
+
     Location loc = closest.getLocation();
     System.out.println(loc.getX() + "," + loc.getY() + "," + loc.getZ());
     return closest;
@@ -178,7 +169,7 @@ public static void setBlock(Location loc, Material type){
     //#TODO add side blocks for path
 }
 
-public static Location buildSteps(Location startLoc,Location endLoc, Direction direction){
+public static Block buildSteps(Location startLoc,Location endLoc, Direction direction){
     boolean YDecrease = startLoc.getY() > endLoc.getY();
     int offsetZ = 0,offsetX = 0;
     BlockFace face = BlockFace.NORTH;
@@ -235,7 +226,7 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
         state.setData(stairs);
         state.update(false, false);
     }
-    return currentLoc;
+    return currentLoc.getBlock();
 }
 
 /*
@@ -253,34 +244,18 @@ public static void setAir(Location loc){
             && location.getBlock().getType()!= Material.PORTAL){
         setBlock(location,Material.AIR);
     }
-        location.setY(location.getY()+1);
-    if(location.getBlock().getType()!= Material.OBSIDIAN
-            && location.getBlock().getType()!= Material.PORTAL){
-        setBlock(location,Material.AIR);
-    }
 }
 
 
-public static Block setDiagonalPath(Location startLoc, Location endLoc){
-    double x = endLoc.getBlockX();
-    double z = endLoc.getBlockZ();
-    int offsetX = 0, offsetZ = 0;
-    if(startLoc.getX()> x) offsetX = -1;
-    else offsetX = 1;
-    if(startLoc.getZ()> z) offsetZ = -1;
-    else offsetZ = 1;
+public static Block setDiagonalPath(Location startLoc, Location endLoc, Direction direction){
+    double xDif = Math.abs(startLoc.getX() - endLoc.getX());
+    double zDif = Math.abs(startLoc.getZ() - endLoc.getZ());
     
-
-    while(startLoc.getBlockX() != x 
-            && startLoc.getBlockZ() != z){
-        System.out.println("z=" + startLoc.getBlockZ() + " " + z);
-        System.out.println("x=" + startLoc.getBlockX() + " " + x);
-        startLoc.setZ(startLoc.getZ()+offsetZ);
-        setAir(startLoc);
-        startLoc.setX(startLoc.getX()+offsetX);
-        setBlock(startLoc,Material.NETHER_BRICK);
-        setAir(startLoc);       
-
+    if(xDif > zDif){
+        if(zDif > 5)
+            while(startLoc.getY() != endLoc.getY()){
+                
+            }
     }
     return startLoc.getBlock();
 }
