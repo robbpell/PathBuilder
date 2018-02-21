@@ -29,10 +29,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class PathBuilder {
     public static PathBuilder    plugin;
-    
+    public static Player myPlayer;
     
 public static Block Find(Player player){
     System.out.println("start");
+    myPlayer = player;
     Location currentLocation = player.getLocation();
     
     //Get end/goal block
@@ -42,7 +43,7 @@ public static Block Find(Player player){
         System.out.println("none found");
         return null;
     }
-    System.out.println("block found");
+    System.out.println("block found " + closest.getX() + "," + closest.getZ());
     closest = getLedge(closest);
     System.out.println("Ledge found");
 
@@ -91,30 +92,47 @@ public static Block closestBlock(Location origin, Set<Material> types, int radiu
     int pZ = origin.getBlockZ();
     World world = origin.getWorld();
     
-    for (int x = -(radius); x <= radius; x ++)
-        {
-            for (int y = -(radius); y <= radius; y ++)
+    Block closest = null;
+    int currentSize = 1;
+    int count = 0;
+    while(currentSize <= radius){
+
+        for (int x = (pX - currentSize); x <= (pX + currentSize); x ++)
             {
-                for (int z = -(radius); z <= radius; z ++)
-                {
-                    Block b = world.getBlockAt((int)pX+x, (int)pY+y, (int)pZ+z);
-                    if(b.getType() == Material.NETHER_BRICK)
+                  if(Math.abs(x) == pX + currentSize)
                     {
-                        Location pos = b.getLocation();
-                            while(world.getBlockAt(pos).getType() == Material.NETHER_BRICK){
-                                pos.setY(pos.getY()+1);
+                        for (int z = (pZ - currentSize); z <= (pZ + currentSize); z ++)
+                        {
+                            if(Math.abs(x) == (pX + currentSize) 
+                                    || Math.abs(z) == (pZ + currentSize))
+                            {
+                                count++;
+
+                                System.out.println(x + "," + z + " cs=" +currentSize);
+                                Block b = world.getBlockAt(x, 64, z);
+                                if(b.getType() == Material.NETHER_BRICK)
+                                {           
+                                    Location pos = b.getLocation();
+                                    while(world.getBlockAt(pos).getType() == Material.NETHER_BRICK){
+                                            pos.setY(pos.getY()+1);
+                                        }
+                                        pos.setY(pos.getY()-1);
+                                        return world.getBlockAt(pos);
+                                }
                             }
-                            pos.setY(pos.getY()-1);
-                        return world.getBlockAt(pos);
-                    
+                        }
                     }
-                }
             }
-        }
+           currentSize++;
+    }           
                     
-                    
-    return null;
+    return closest;
 }
+
+public static double getDistance(Block start, Block end){
+    return Math.hypot(start.getX()-end.getX(), start.getZ()-end.getZ());
+}
+
 
 /*
  * Checks for positoin with 2 blocks on each side. 
@@ -132,29 +150,35 @@ public static Block getLedge(Block block){
         return block;
     }
     
-    System.out.println("finding offset");
+    System.out.println("finding offset for " + loc.getBlockX() + "," + loc.getBlockY() + "," +loc.getBlockZ());
     int posOffset = 0;
     for (int i = 1; i <= 5; i++) {
         if(!isType(loc,Material.NETHER_BRICK,i))
+        {
             posOffset = i--;
+            break;
+        }
         else if (i == 5)
             posOffset = 5;
     }
     int negOffset = 0;
     for (int i = 1; i <= 5; i++) {
-        if(!isType(loc,Material.NETHER_BRICK,i*-1))
+        if(!isType(loc,Material.NETHER_BRICK,(-i)))
+        {
             negOffset = (i*-1)+ 1;
+            break;
+        }
         else if (i == 5)
             negOffset = -5;
     }
     
     System.out.println("Ajusting offset" + negOffset + " " + posOffset);
-    if(((negOffset *-1) + posOffset) < 5)
+    if((-negOffset + posOffset) < 5)
         return null;
     else if (negOffset > -2){
-        loc.setX(loc.getX() + (2 + negOffset));
+        loc.setX(loc.getX() + (5 + negOffset));
     }else if (posOffset < 2){
-        loc.setX(loc.getX() - (2 - posOffset));
+        loc.setX(loc.getX() - (5 - posOffset));
     }else
         System.err.println("no ledge found using current block");
     
@@ -167,14 +191,19 @@ public static Block getLedge(Block block){
  * @parm type check if is this type
  * @parm xOffset int to add to the x value of the location before checking
  */
-public static boolean isType(Location loc,Material type, int xOffset){
+public static boolean isType(Location location,Material type, int xOffset){
+    Location loc = location.clone();
     loc.setX(loc.getX()+ xOffset);
     return loc.getWorld().getBlockAt(loc).getType() == type;
 }
 
 
-public static void setBlock(Location loc, Material type){
-    loc.getBlock().setType(type);
+public static Block setBlock(Location loc, Material type){
+    Block block = loc.getBlock();
+    if(block.getType() == Material.BEDROCK)
+        return null;
+    block.setType(type);
+    return block;
     //#TODO add side blocks for path
 }
 
@@ -224,7 +253,8 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
         currentLoc.setY(currentLoc.getY()+offsetY);
         currentLoc.setZ(currentLoc.getZ()+offsetZ);
         currentLoc.setX(currentLoc.getX()+offsetX);
-        setBlock(currentLoc,Material.NETHER_BRICK_STAIRS);
+        Block block = setBlock(currentLoc,Material.NETHER_BRICK_STAIRS);
+        if(block == null)break;
         setAir(currentLoc);
         
         BlockState state = currentLoc.getBlock().getState();
@@ -273,12 +303,10 @@ public static Block setDiagonalPath(Location startLoc, Location endLoc){
 
     while(startLoc.getBlockX() != x 
             && startLoc.getBlockZ() != z){
-        System.out.println("z=" + startLoc.getBlockZ() + " " + z);
-        System.out.println("x=" + startLoc.getBlockX() + " " + x);
         startLoc.setZ(startLoc.getZ()+offsetZ);
         setAir(startLoc);
         startLoc.setX(startLoc.getX()+offsetX);
-        setBlock(startLoc,Material.NETHER_BRICK);
+        setBlock(startLoc,Material.GLOWSTONE);
         setAir(startLoc);       
 
     }

@@ -3,6 +3,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 /**
  * Hello world!
  *
@@ -29,10 +30,19 @@ public class Main extends JavaPlugin {
      */
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String arg[]) {
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
         
         if(commandLabel.equalsIgnoreCase("test")) {
-            PathBuilder.Find(player);
+            
+            BukkitScheduler scheduler = getServer().getScheduler();
+        scheduler.scheduleSyncDelayedTask(this, new Runnable() {
+            @Override
+            public void run() {
+                PathBuilder.Find(player);
+                }
+            });
+            
+            
         }
         return false;
     }
