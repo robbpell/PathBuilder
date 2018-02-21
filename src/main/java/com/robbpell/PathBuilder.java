@@ -217,28 +217,40 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
             {
                 offsetZ = -1;
                 offsetX = 0;
-                face = BlockFace.NORTH;
+                if(YDecrease)
+                    face = BlockFace.SOUTH;
+                else
+                    face = BlockFace.NORTH;
             }
             break;
              case SOUTH:
              {
                 offsetZ = 1;
                 offsetX = 0;
-                face = BlockFace.SOUTH;
+                if(YDecrease)
+                    face = BlockFace.SOUTH;
+                else
+                    face = BlockFace.NORTH;
              }
             break;
             case EAST:
             {
                 offsetZ = 0;
                 offsetX = 1;
-                face = BlockFace.EAST;
+                if(YDecrease)
+                    face = BlockFace.WEST;
+                else
+                    face = BlockFace.EAST;
             }
             break;
             case WEST:
             {
                 offsetZ = 0;
                 offsetX = -1;
-                face = BlockFace.WEST;
+                if(YDecrease)
+                    face = BlockFace.EAST;
+                else
+                    face = BlockFace.WEST;
             }
             break;
     }
@@ -248,7 +260,7 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
     
     
     Location currentLoc = startLoc;
-    while(currentLoc.getY() != endLoc.getY()){
+    while(currentLoc.getBlockY()!= endLoc.getY()){
         System.out.println("Adding Step" + currentLoc.getY() +" "+ endLoc.getY());
         currentLoc.setY(currentLoc.getY()+offsetY);
         currentLoc.setZ(currentLoc.getZ()+offsetZ);
