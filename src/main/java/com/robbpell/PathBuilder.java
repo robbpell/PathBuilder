@@ -71,7 +71,7 @@ public static Block Find(Player player){
     System.out.println("Building Steps");
     currentLocation = buildSteps(currentLocation,closest.getLocation(),dir);
     System.out.println("Steps Built");
-    
+    System.out.println(currentLocation.getX() + "," + currentLocation.getY() + "," + currentLocation.getZ());
     setDiagonalPath(currentLocation,closest.getLocation());
     System.out.println("Diagonal Built");
         
@@ -111,7 +111,6 @@ public static Block closestBlock(Location origin, Set<Material> types, int radiu
                             {
                                 count++;
 
-                                System.out.println(x + "," + z + " cs=" +currentSize);
                                 Block b = world.getBlockAt(x, 64, z);
                                 if(b.getType() == Material.NETHER_BRICK)
                                 {           
@@ -215,9 +214,12 @@ public static Block setBlock(Location loc, Material type, boolean setAir){
     //#TODO add side blocks for path
 }
 
+/*
+ * buildSteps from startloc to endloc then moves one block horizontally
+ */
 public static Location buildSteps(Location startLoc,Location endLoc, Direction direction){
     boolean YDecrease = startLoc.getY() > endLoc.getY();
-    int offsetZ = 0,offsetX = 0;
+    int offsetZ = 0,offsetX = 0, sideStepX = 0, sideStepZ = 0;
     BlockFace face = BlockFace.NORTH;
     
     switch (direction) {
@@ -225,6 +227,7 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
             {
                 offsetZ = -1;
                 offsetX = 0;
+                sideStepX = -1;
                 if(YDecrease)
                     face = BlockFace.SOUTH;
                 else
@@ -235,6 +238,7 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
              {
                 offsetZ = 1;
                 offsetX = 0;
+                sideStepX = 1;
                 if(YDecrease)
                     face = BlockFace.SOUTH;
                 else
@@ -245,6 +249,7 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
             {
                 offsetZ = 0;
                 offsetX = 1;
+                sideStepZ = -1;
                 if(YDecrease)
                     face = BlockFace.WEST;
                 else
@@ -255,6 +260,7 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
             {
                 offsetZ = 0;
                 offsetX = -1;
+                sideStepZ = 1;
                 if(YDecrease)
                     face = BlockFace.EAST;
                 else
@@ -262,29 +268,45 @@ public static Location buildSteps(Location startLoc,Location endLoc, Direction d
             }
             break;
     }
-    
+    Location currentLoc = startLoc;
     int offsetY = 1;
     if(YDecrease) offsetY = -1;
+    else currentLoc.setY(currentLoc.getY()-1);
     
     
-    Location currentLoc = startLoc;
-    while(currentLoc.getBlockY()!= endLoc.getY()){
-        System.out.println("Adding Step" + currentLoc.getY() +" "+ endLoc.getY());
+    
+    while((YDecrease && currentLoc.getBlockY()> endLoc.getY() )
+            || (!YDecrease && currentLoc.getBlockY()< endLoc.getY())){
+
         currentLoc.setY(currentLoc.getY()+offsetY);
         currentLoc.setZ(currentLoc.getZ()+offsetZ);
         currentLoc.setX(currentLoc.getX()+offsetX);
-        Block block = setBlock(currentLoc,Material.NETHER_BRICK_STAIRS);
+        System.out.println("Adding Step" + currentLoc.getX() +" "+ currentLoc.getY()+" "+ currentLoc.getZ());
+        Block block = setBlock(currentLoc,Material.NETHER_BRICK_STAIRS,true);
         if(block == null)break;
-        setAir(currentLoc);
         
         BlockState state = currentLoc.getBlock().getState();
-       
         Stairs stairs = (Stairs) state.getData();
         stairs.setFacingDirection(face);
        
         state.setData(stairs);
         state.update(false, false);
+        
+        Location tempLoc = currentLoc.clone();
+        tempLoc.setX(tempLoc.getBlockX()+sideStepX);
+        tempLoc.setZ(tempLoc.getBlockZ()+sideStepZ);
+        block = setBlock(tempLoc,Material.NETHER_BRICK_STAIRS,true);
+        if(block == null)break;
+        
+        state = tempLoc.getBlock().getState();
+        stairs = (Stairs) state.getData();
+        stairs.setFacingDirection(face);
+       
+        state.setData(stairs);
+        state.update(false, false);
     }
+        currentLoc.setZ(currentLoc.getZ()+offsetZ);
+        currentLoc.setX(currentLoc.getX()+offsetX);
     return currentLoc;
 }
 
@@ -323,6 +345,7 @@ public static Block setDiagonalPath(Location startLoc, Location endLoc){
 
     while(startLoc.getBlockX() != x 
             && startLoc.getBlockZ() != z){
+        System.out.println(startLoc.getX() +" "+ startLoc.getY()+" "+ startLoc.getZ());
         startLoc.setZ(startLoc.getZ()+offsetZ);
         Block b = setBlock(startLoc,Material.STAINED_GLASS,true);
         b.setData((byte)15);
