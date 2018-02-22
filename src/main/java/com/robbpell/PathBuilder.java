@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -19,7 +20,9 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.material.Colorable;
 import org.bukkit.material.Stairs;
+import org.bukkit.material.Step;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -197,12 +200,17 @@ public static boolean isType(Location location,Material type, int xOffset){
     return loc.getWorld().getBlockAt(loc).getType() == type;
 }
 
-
 public static Block setBlock(Location loc, Material type){
+    return setBlock(loc,type,false);
+}
+
+public static Block setBlock(Location loc, Material type, boolean setAir){
     Block block = loc.getBlock();
     if(block.getType() == Material.BEDROCK)
         return null;
     block.setType(type);
+    if(setAir)
+        setAir(block.getLocation());
     return block;
     //#TODO add side blocks for path
 }
@@ -316,9 +324,30 @@ public static Block setDiagonalPath(Location startLoc, Location endLoc){
     while(startLoc.getBlockX() != x 
             && startLoc.getBlockZ() != z){
         startLoc.setZ(startLoc.getZ()+offsetZ);
-        setAir(startLoc);
+        Block b = setBlock(startLoc,Material.STAINED_GLASS,true);
+        b.setData((byte)15);
+        Location tempLoc = startLoc.clone();
+        tempLoc.setZ(tempLoc.getZ()+offsetZ);
+        b = setBlock(tempLoc,Material.STAINED_GLASS,true);
+        b.setData((byte)15);
+        tempLoc.setZ(tempLoc.getZ()+offsetZ);
+        tempLoc.setY(tempLoc.getY()+1);
+        b = setBlock(tempLoc,Material.STEP,true);
+        b.setData((byte)6);
+        
+        tempLoc = startLoc.clone();
+        tempLoc.setZ(tempLoc.getZ()-offsetZ);
+        b = setBlock(tempLoc,Material.STAINED_GLASS,true);
+        b.setData((byte)15);
+        tempLoc.setZ(tempLoc.getZ()-offsetZ);
+        b = setBlock(tempLoc,Material.STAINED_GLASS,true);
+        b.setData((byte)15);
+        tempLoc.setZ(tempLoc.getZ()-offsetZ);
+        tempLoc.setY(tempLoc.getY()+1);
+        b = setBlock(tempLoc,Material.STEP,true);
+        b.setData((byte)6);
+        
         startLoc.setX(startLoc.getX()+offsetX);
-        setBlock(startLoc,Material.GLOWSTONE);
         setAir(startLoc);       
 
     }
