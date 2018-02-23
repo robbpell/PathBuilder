@@ -72,8 +72,10 @@ public static Block Find(Player player){
     currentLocation = buildSteps(currentLocation,closest.getLocation(),dir);
     System.out.println("Steps Built");
     System.out.println(currentLocation.getX() + "," + currentLocation.getY() + "," + currentLocation.getZ());
-    setDiagonalPath(currentLocation,closest.getLocation());
+    Block b = setDiagonalPath(currentLocation,closest.getLocation());
     System.out.println("Diagonal Built");
+    
+    setStraight(b, closest);
         
     Location loc = closest.getLocation();
     System.out.println(loc.getX() + "," + loc.getY() + "," + loc.getZ());
@@ -205,7 +207,7 @@ public static Block setBlock(Location loc, Material type){
 
 public static Block setBlock(Location loc, Material type, boolean setAir){
     Block block = loc.getBlock();
-    if(block.getType() == Material.BEDROCK)
+    if(block.getType() == Material.BEDROCK || block.getType() == Material.NETHER_BRICK)
         return null;
     block.setType(type);
     if(setAir)
@@ -377,197 +379,27 @@ public static Block setDiagonalPath(Location startLoc, Location endLoc){
     return startLoc.getBlock();
 }
 
-/** 
-    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String arg[]) {
-        Player player = (Player) sender;
+public static void setStraight(Block block, Block endBlock){
+    Location location = block.getLocation();
+    Location endLocation = endBlock.getLocation();
+    int endX = endLocation.getBlockX();
+    int endZ = endLocation.getBlockZ();
+    int xOffset = 0, zOffset = 0;
+    if(location.getBlockX() > endX) xOffset = -1;
+    else if(location.getBlockX() < endX) xOffset = 1;
+    else if(location.getBlockZ() < endZ) zOffset = 1;
+    else if(location.getBlockZ() < endZ) zOffset = 1;
+    
+    System.out.println(endX + "," + endZ+ "," +xOffset+ "," +zOffset+ "," + location.getBlockX() + "," + location.getBlockZ());
+    
+    while(location.getBlockX() != endX 
+            || location.getBlockZ() != endZ){
+        Block b = setBlock(location,Material.STAINED_GLASS,true);
+        if(b != null) b.setData((byte)15);
         
-        if(commandLabel.equalsIgnoreCase("test")) {
-            Location loc1 =  player.getPlayer().getLocation();
-            Location loc2 =  player.getPlayer().getLocation();
-            ArrayList<Location> path;
-            World world = loc1.getWorld();
- //           netherpath pathType = new netherpath();
-            
-            loc1.setX(21);
-            loc1.setZ(-31);
-            loc1.setY(63);
-            loc2.setX(294);
-            loc2.setZ(173);
-            loc2.setY(73);
-            
-            String dir = whatdirection(loc1,loc2);
-            path = directpath(dir,loc1,loc2,world);
-
-          
-            int layer = 0, z = 0;
-            
-        for (int i = 0; i <= path.size()-1; i++){
-            z=0;getLogger().info("1_" + z + "i=" +i );
-            
-            switch (layer) {
-                case 0:
-                        while (z < 5){
-                            if (z == 0 || z == 4){
-                               path.get(i).setX(path.get(i).getX()+z);
-                               Block blockToChange = world.getBlockAt(path.get(i));
-                               blockToChange.setTypeId(112);
-                               z++;getLogger().info("2_" + z);
-                               } else
-                            {z++;}
-                        } 
-                        layer++;getLogger().info("layer_" + layer);
-                           i--;
-                           break;
-                            
-                case 1: path.get(i).setY((path.get(i).getY())-1);
-                    while (z < 4){
-                        
-                        path.get(i).setX((path.get(i).getX())-1);
-                        Block blockToChange = world.getBlockAt(path.get(i));
-                        blockToChange.setTypeId(112);
-                        z++;getLogger().info("3" + path.get(i));
-                    } 
-                    layer=0;
-                    break;
-                    default: break;
-                }
-            }
-            
-            //pathType.build(path, world);
-
-//            for (int i = 0; i <= path.size()-1; i++)
-//            { 
-//                Location tempLoc = path.get(i);
-//                getLogger().info("Z=" + tempLoc.getZ() + "X=" + tempLoc.getX());
-//                Block blockToChange = world.getBlockAt(tempLoc);
-//    		blockToChange.setTypeId(112);    // set the block to Type 1
-//                path.set(i, null);
-//                
-//            }
-    	} return false;
+        location.setZ(location.getZ()+zOffset);
+        location.setX(location.getX()+xOffset);
+        System.out.println(location.getBlockX() + "," + location.getBlockZ());
     }
-        
-    public String whatdirection(Location start, Location end){
-    double x1 = start.getX();
-    double x2 = end.getX();
-    double z1 =start.getZ();
-    double z2 = end.getZ();
-        //need to test Direct coor. ie just north also add up/down;
-    String dir;
-    if (z1 > z2)
-        {dir = "N";}
-    else if (z1 < z2)
-        {dir = "S";}
-    else
-        {dir = "";}
-    
-    if (x1 > x2)
-        {dir = dir+"W";}
-    else if (x1 < x2)
-        {dir = dir+"E";}
-    
-    return dir;
-    }
-    
-
-    
-    public ArrayList<Location> directpath(String dir, Location start, Location end, World world){
-        ArrayList<Location>path = new ArrayList<Location>();
-        Location tempLoc = start.clone();
-        world = start.getWorld();
-        
-        getLogger().info("1");
-        path.add(tempLoc);
-        int i;
-        
-        if ("SE".equals(dir)){
-            for (i=1; end.getY() != tempLoc.getY(); i++)
-            {
-                tempLoc = new Location(world, path.get(i-1).getX(), 62, 1);
-                tempLoc = path.get(i-1).clone();
-                tempLoc.setY(start.getY()+i);
-                tempLoc.setZ(start.getZ()+i);
-                path.add(tempLoc);
-            } 
-            start = path.get(i-1).clone(); 
- //           getLogger().info("i=" + i + "_" + path.get(i-1));
-            //y is recycling.
-            for ( i=1  ; end.getX() != tempLoc.getX() && end.getZ() != tempLoc.getZ() ;i++)
-                { //create diagonal untill X or Z match.
-                    tempLoc = new Location(world, 1, path.get(i-1).getY(), 1);
-                    tempLoc.setY(start.getY());
-                tempLoc.setX(start.getX()+i);
-                tempLoc.setZ(start.getZ()+i);
-                path.add(tempLoc);
-//
-                                }
-            start = tempLoc.clone(); 
-            while (tempLoc.getX() != end.getX() || tempLoc.getZ() != end.getZ())
-              {
-                    tempLoc = new Location(world, 1, 62, 1);
-                    tempLoc = start.clone();
-                    if (tempLoc.getX() == end.getX())
-                        { //create straight line by z++
-                            tempLoc.setX(path.get(path.size() -1).getX());
-                            tempLoc.setZ(path.get(path.size() -1).getZ()+1);
-                            path.add(tempLoc);
-                            i++;
-                    } else if (tempLoc.getZ() == end.getZ())
-                        {//create straight line by x++
-                            tempLoc.setZ(path.get(path.size() -1).getZ());
-                            tempLoc.setX(path.get(path.size() -1).getX()+1);
-                            path.add(tempLoc);
-                            i++; 
-                        }
-              }
-        }
-        //getLogger().info("here3");
-    
-
-        return path;
-    }
-    
-    
-    
-//    //    public ArrayList<Location> directpath(String dir, Location start, Location end, World world){
-//        ArrayList<Location>path = new ArrayList<Location>();
-//        Location tempLoc = start.clone();
-//        world = start.getWorld();
-//        
-//        getLogger().info("1");
-//        path.add(tempLoc);
-//        int i;
-//        
-//        if ("SE".equals(dir)){
-//            for ( i=1  ; end.getX() != tempLoc.getX() && end.getZ() != tempLoc.getZ() ;i++)
-//                { //create diagonal untill X or Z match.
-//                    tempLoc = new Location(world, 1, 62, 1);
-//                tempLoc.setX(start.getX()+i);
-//                tempLoc.setZ(start.getZ()+i);
-//                path.add(tempLoc);
-//
-//                                }
-//            getLogger().info("overthere");
-//            while (path.get(i-1).getX() != end.getX() || path.get(i-1).getZ() != end.getZ())
-//            {tempLoc = new Location(world, 1, 62, 1);
-//            if (path.get(i-1).getX() == end.getX())
-//                {
-//                    tempLoc.setX(path.get(i-1).getX());
-//                    tempLoc.setZ(path.get(i-1).getZ()+1);
-//                    path.add(tempLoc);
-//                    i++;
-//            } else if (path.get(i-1).getZ() == end.getZ())
-//                {
-//                    tempLoc.setZ(path.get(i-1).getZ());
-//                    tempLoc.setX(path.get(i-1).getX()+1);
-//                    path.add(tempLoc);
-//                    i++;
-//                }getLogger().info("here1" + path.get(i-1)+"_"+i);
-//            }getLogger().info("here2");
-//        }getLogger().info("here3");
-//    
-//
-//        return path;
-//    } */       
 }
-
+}
